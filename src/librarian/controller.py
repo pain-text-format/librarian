@@ -184,6 +184,10 @@ class LibrarianController:
 
     def delete_projects(self, project_names, pattern, safe=True):
         # prioritize project names, then pattern.
+        if (project_names is None or len(project_names) == 0) and pattern is None:
+            print("No projects to delete.")
+            return
+
         if len(project_names) == 0:
             project_names = self.service.list_projects(pattern=pattern)
             return self.delete_projects(project_names, None)
