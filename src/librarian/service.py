@@ -155,7 +155,6 @@ class LibraryService:
         for file in self.file_names:
             workspace_file_path = os.path.join(self.workspace_path, file)
             library_file_path = os.path.join(self.library_path, project_name, file)
-            print(workspace_file_path, os.path.isdir(workspace_file_path))
             
             if not (os.path.exists(workspace_file_path) or os.path.exists(library_file_path)):
                 continue
