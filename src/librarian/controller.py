@@ -157,7 +157,9 @@ class LibrarianController:
         if project_name == self.current_project:
             return
         if save_changes is None:
-            save_changes = input("Save changes? (y/n) ")
+            save_changes = input("Save changes? (y/n/q) ")
+            if save_changes.lower() not in {"y", "n"}:
+                return
             save_changes = True if save_changes.lower() == "y" else False
         if save_changes:
             self.push()
