@@ -153,8 +153,18 @@ class LibrarianController:
         else:
             self.copy_relative(source_project_name, destination_project_name)
 
-    def assign(self, project_name):
+    def assign(self, project_name, save_changes:bool=None):
+        if project_name == self.current_project:
+            return
+        if save_changes is None:
+            save_changes = input("Save changes? (y/n/q) ")
+            if save_changes.lower() not in {"y", "n"}:
+                return
+            save_changes = True if save_changes.lower() == "y" else False
+        if save_changes:
+            self.push()
         self._assign_project(project_name)
+        self.pull()
 
     def pull(self):
         if self.current_project is not None:
@@ -167,6 +177,10 @@ class LibrarianController:
             self.service.push_project(self.current_project)
         else:
             print(f"No assigned project to push to.")
+
+    def update_sync_state(self):
+        new_sync_state = self.service.get_sync_state()
+        self.sync_state = new_sync_state
 
     def sync(self):
         if self.current_project is not None:

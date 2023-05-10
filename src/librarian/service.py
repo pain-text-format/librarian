@@ -149,6 +149,14 @@ class LibraryService:
         project_path = self.to_project_path(to_project_name)
         self.copy_files(self.workspace_path, project_path)
 
+    def get_sync_state(self):
+        new_state = dict()
+        for file in self.file_names:
+            workspace_file_path = os.path.join(self.workspace_path, file)
+            if os.path.isdir(workspace_file_path):
+                new_state[file] = Bucket(path=workspace_file_path).files
+        return new_state
+
     def sync(self, project_name, previous_state:Dict=None, last_sync_time=None) -> Dict:
         # sync between library and workspace and returns the final state as output.
         new_state = dict()
