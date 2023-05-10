@@ -88,4 +88,5 @@ def librarian_command_line():
     if args.command is None:
         controller.display_status()
 
+    controller.update_sync_state()
     controller.update_metadata()
