@@ -60,9 +60,9 @@ To assign a different project, execute
 librarian assign [project-name]
 ```
 
-### Features of List
-* Wildcarding is supported (e.g. `librarian list hello-*`)
-* Folder structure is supported (e.g. `librarian list path/to/project-name`)
+### Features
+* Wildcarding is supported with the `-p` flag (e.g. `librarian list -p hello-*` or `librarian delete -p hello-*`)
+* Folder structure is supported (e.g. `librarian create path/to/project-name`)
 
 Delete a project:
 ```bash
