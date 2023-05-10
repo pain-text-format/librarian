@@ -73,9 +73,10 @@ Load a project:
 librarian load [project-name]
 ```
 
-## Push/Pull from Assigned Projects
+## Synchronize with Assigned Project
 The following commands work only if a project is assigned to the workspace.
 
+### Push and Pull
 Copy an updated `UserData` folder from the game directory to the assigned project location with
 ```bash
 librarian push
@@ -85,6 +86,12 @@ This will delete the `UserData` folder in the assigned project directory.
 Similarly, load the `UserData` folder from the assigned project directory to the game directory with
 ```bash
 librarian pull
+```
+
+### Sync
+Synchronize files in the `UserData` folder so that they are equal between workspace and library:
+```bash
+librarian sync
 ```
 
 ## Applications

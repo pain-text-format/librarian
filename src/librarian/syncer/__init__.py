@@ -18,6 +18,15 @@ def copy_one_way(src_bucket:Bucket, target_bucket:Bucket, path:str):
     os.makedirs(target_directory, exist_ok=True)
     shutil.copy(src_path, target_path)
 
+
+"""
+File sync expected behavior:
+* Modifications, additions and deletions from one folder are transferred to the other (if the other folder is unchanged).
+* Modification overrides deletion: if a file is modified in one folder and deleted in another folder, the modified file will be copied to the latter (instead of being deleted).
+* The most recent modification is prioritized: if the same file is modified in both folders, the file modified most recently takes priority.
+* The algorithm treats the `UserData` folders like "buckets", i.e. it doesn't recognize folder structures and will not delete folders.
+"""
+
 def sync_buckets(bucket_a:Bucket, bucket_b:Bucket, previous_state:Bucket=None, last_sync_time:int=None):
     # sync buckets A and B so they are equal in bucket objects.
     
