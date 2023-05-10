@@ -33,6 +33,8 @@ def librarian_command_line():
 
     push_parser = subparsers.add_parser('push', help='Save current project to library.')
 
+    sync_parser = subparsers.add_parser('sync', help='Sync current project with library.')
+
     delete_parser = subparsers.add_parser('delete', help='Delete a project or multiple projects.')
     delete_parser.add_argument('-n', '--names', type=str, nargs="+", default=[])
     delete_parser.add_argument('-p', '--pattern', type=str)
@@ -70,6 +72,9 @@ def librarian_command_line():
     
     if command == 'push':
         controller.push()
+
+    if command == 'sync':
+        controller.sync()
 
     if command == 'load':
         controller.load_project(args.project_name)

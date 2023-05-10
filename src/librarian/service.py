@@ -1,11 +1,13 @@
 import logging
-from typing import List, Optional
+from typing import List, Optional, Dict
 import os
 import re
 import shutil
 import fnmatch
 
 from librarian.exceptions import InvalidProjectException
+from librarian.syncer.data import Bucket
+from librarian.syncer import sync_buckets
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +19,18 @@ class LibraryService:
         self.library_path = library_path
         self.workspace_path = workspace_path
         self.file_names = file_names
+
+    def get_sync_state(self, project_path) -> Dict:
+        sync_state = dict()
+        for file in self.file_names:
+            file_path = os.path.join(project_path, file)
+            if not os.path.exists(file_path):
+                continue
+            if os.path.isfile(file_path):
+                sync_state[file_path] = os.path.getmtime(file_path)
+            if os.path.isdir(file_path):
+                sync_state[file_path] = Bucket(file_path).files
+        return sync_state
 
     def to_project_path(self, project_name:str) -> str:
         return os.path.join(self.library_path, project_name)
@@ -134,6 +148,31 @@ class LibraryService:
             raise InvalidProjectException(to_project_name)
         project_path = self.to_project_path(to_project_name)
         self.copy_files(self.workspace_path, project_path)
+
+    def sync(self, project_name, previous_state:Dict=None, last_sync_time=None) -> Dict:
+        # sync between library and workspace and returns the final state as output.
+        new_state = dict()
+        for file in self.file_names:
+            workspace_file_path = os.path.join(self.workspace_path, file)
+            library_file_path = os.path.join(self.library_path, project_name, file)
+            print(workspace_file_path, os.path.isdir(workspace_file_path))
+            
+            if not (os.path.exists(workspace_file_path) or os.path.exists(library_file_path)):
+                continue
+            if not os.path.exists(workspace_file_path):
+                ... # TODO do something
+            if not os.path.exists(library_file_path):
+                ... # TODO do something
+            # file exist in both workspace and library.
+            if os.path.isfile(workspace_file_path):
+                ... # TODO do something
+            if os.path.isdir(workspace_file_path):
+                workspace_file_bucket = Bucket(workspace_file_path)
+                library_file_bucket = Bucket(library_file_path)
+                previous_file_state = Bucket(files=previous_state.get(file)) if previous_state is not None and file in previous_state else None
+                sync_buckets(workspace_file_bucket, library_file_bucket, previous_state=previous_file_state, last_sync_time=last_sync_time)
+                new_state[file] = Bucket(path=workspace_file_path).files
+        return new_state
 
     # delete
     def delete_project(self, project_name, safe=True) -> bool:

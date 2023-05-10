@@ -13,6 +13,8 @@ CURRENT_PROJECT_KEY = 'current-project'
 CREATE_TIME_KEY = 'create-time'
 MODIFY_TIME_KEY = 'modify-time'
 SYNC_TARGET_KEY = 'sync-targets'
+LAST_SYNC_TIME_KEY = 'last-sync-time'
+SYNC_STATE_KEY = 'sync-state'
 
 def spacing(func):
     def _func(*args, **kwargs):
@@ -58,6 +60,8 @@ class LibrarianController:
                 self.create_time = data.get(CREATE_TIME_KEY)
                 self.modify_time = data.get(MODIFY_TIME_KEY)
                 self.sync_targets = data.get(SYNC_TARGET_KEY)
+                self.last_sync_time = data.get(LAST_SYNC_TIME_KEY)
+                self.sync_state = data.get(SYNC_STATE_KEY)
             print("Retrieved Librarian data.")
         else:
             # user inputs here.
@@ -77,6 +81,8 @@ class LibrarianController:
             self.create_time = time.time()
             self.modify_time = self.create_time
             self.sync_targets = sync_targets
+            self.last_sync_time = time.time()
+            self.sync_state = None
         
         self.service = LibraryService(self.library_path, self.workspace_path, self.sync_targets)
 
@@ -100,7 +106,9 @@ class LibrarianController:
                 CURRENT_PROJECT_KEY: self.current_project,
                 CREATE_TIME_KEY: self.create_time,
                 MODIFY_TIME_KEY: time.time(),
-                SYNC_TARGET_KEY: self.sync_targets
+                SYNC_TARGET_KEY: self.sync_targets,
+                SYNC_STATE_KEY: self.sync_state,
+                LAST_SYNC_TIME_KEY: self.last_sync_time,
             }, writer)
 
     def _unassign_project(self):
@@ -159,6 +167,16 @@ class LibrarianController:
             self.service.push_project(self.current_project)
         else:
             print(f"No assigned project to push to.")
+
+    def sync(self):
+        if self.current_project is not None:
+            previous_state = self.sync_state
+            last_sync_time = self.last_sync_time
+            new_sync_state = self.service.sync(self.current_project, previous_state=previous_state, last_sync_time=last_sync_time)
+            self.sync_state = new_sync_state
+            self.last_sync_time = time.time()
+        else:
+            print(f"No assigned project to sync with.")
 
     def load_project(self, project_name):
         current_project = self.current_project
