@@ -154,12 +154,55 @@ class LibrarianController:
             self.copy_relative(source_project_name, destination_project_name)
 
     def assign(self, project_name, save_changes:bool=None):
+        # get project name from possibly shortened name.
+        projects = self.service.list_projects(pattern=project_name)
+        if len(projects) == 0:
+            projects = self.service.list_projects(pattern="*"+project_name) # check basename
+        if len(projects) == 0:
+            print(f"No projects found.")
+            return
+        
+        if len(projects) == 1:
+            project_name = projects[0]
+            # print(f"Confirm assignment to {project_name}.")
+            # while True:
+            #     confirm = input(f"Select (y/n): ")
+            #     if confirm.lower() == "y":
+            #         break
+            #     if confirm.lower() == "n":
+            #         return
+        else:
+            print("Found multiple projects that match.")
+            for i, p in enumerate(projects):
+                print(f" [{i+1}] - {p}")
+
+            while True:
+                project_id = input("Select a project or press q to quit: ")
+                if project_id.lower() == "q":
+                    return
+                try:
+                    project_id = int(project_id)
+                    project_name = projects[project_id-1]
+                    break
+                except ValueError:
+                    return
+                except IndexError:
+                    print("Invalid selection.")
+
+        print("-----\nAssignment information: ")
+        print(f"Previous project: {self.current_project}")
+        print(f"New project:      {project_name}")
+        print("-----")
+
         if project_name == self.current_project:
+            print("No changes to assignment.")
             return
         if save_changes is None:
-            save_changes = input("Save changes? (y/n/q) ")
+            print("Save changes before assigning new project?\n")
+            save_changes = input("Select (y/n): ")
             if save_changes.lower() not in {"y", "n"}:
                 return
+            
             save_changes = True if save_changes.lower() == "y" else False
         if save_changes:
             self.push()
