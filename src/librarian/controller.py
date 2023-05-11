@@ -13,6 +13,8 @@ CURRENT_PROJECT_KEY = 'current-project'
 CREATE_TIME_KEY = 'create-time'
 MODIFY_TIME_KEY = 'modify-time'
 SYNC_TARGET_KEY = 'sync-targets'
+LAST_SYNC_TIME_KEY = 'last-sync-time'
+SYNC_STATE_KEY = 'sync-state'
 
 def spacing(func):
     def _func(*args, **kwargs):
@@ -58,6 +60,8 @@ class LibrarianController:
                 self.create_time = data.get(CREATE_TIME_KEY)
                 self.modify_time = data.get(MODIFY_TIME_KEY)
                 self.sync_targets = data.get(SYNC_TARGET_KEY)
+                self.last_sync_time = data.get(LAST_SYNC_TIME_KEY)
+                self.sync_state = data.get(SYNC_STATE_KEY)
             print("Retrieved Librarian data.")
         else:
             # user inputs here.
@@ -77,6 +81,8 @@ class LibrarianController:
             self.create_time = time.time()
             self.modify_time = self.create_time
             self.sync_targets = sync_targets
+            self.last_sync_time = time.time()
+            self.sync_state = None
         
         self.service = LibraryService(self.library_path, self.workspace_path, self.sync_targets)
 
@@ -100,7 +106,9 @@ class LibrarianController:
                 CURRENT_PROJECT_KEY: self.current_project,
                 CREATE_TIME_KEY: self.create_time,
                 MODIFY_TIME_KEY: time.time(),
-                SYNC_TARGET_KEY: self.sync_targets
+                SYNC_TARGET_KEY: self.sync_targets,
+                SYNC_STATE_KEY: self.sync_state,
+                LAST_SYNC_TIME_KEY: self.last_sync_time,
             }, writer)
 
     def _unassign_project(self):
@@ -145,8 +153,61 @@ class LibrarianController:
         else:
             self.copy_relative(source_project_name, destination_project_name)
 
-    def assign(self, project_name):
+    def assign(self, project_name, save_changes:bool=None):
+        # get project name from possibly shortened name.
+        projects = self.service.list_projects(pattern=project_name)
+        if len(projects) == 0:
+            projects = self.service.list_projects(pattern="*"+project_name) # check basename
+        if len(projects) == 0:
+            print(f"No projects found.")
+            return
+        
+        if len(projects) == 1:
+            project_name = projects[0]
+            # print(f"Confirm assignment to {project_name}.")
+            # while True:
+            #     confirm = input(f"Select (y/n): ")
+            #     if confirm.lower() == "y":
+            #         break
+            #     if confirm.lower() == "n":
+            #         return
+        else:
+            print("Found multiple projects that match.")
+            for i, p in enumerate(projects):
+                print(f" [{i+1}] - {p}")
+
+            while True:
+                project_id = input("Select a project or press q to quit: ")
+                if project_id.lower() == "q":
+                    return
+                try:
+                    project_id = int(project_id)
+                    project_name = projects[project_id-1]
+                    break
+                except ValueError:
+                    return
+                except IndexError:
+                    print("Invalid selection.")
+
+        print("-----\nAssignment information: ")
+        print(f"Previous project: {self.current_project}")
+        print(f"New project:      {project_name}")
+        print("-----")
+
+        if project_name == self.current_project:
+            print("No changes to assignment.")
+            return
+        if save_changes is None:
+            print("Save changes before assigning new project?\n")
+            save_changes = input("Select (y/n): ")
+            if save_changes.lower() not in {"y", "n"}:
+                return
+            
+            save_changes = True if save_changes.lower() == "y" else False
+        if save_changes:
+            self.push()
         self._assign_project(project_name)
+        self.pull()
 
     def pull(self):
         if self.current_project is not None:
@@ -159,6 +220,20 @@ class LibrarianController:
             self.service.push_project(self.current_project)
         else:
             print(f"No assigned project to push to.")
+
+    def update_sync_state(self):
+        new_sync_state = self.service.get_sync_state()
+        self.sync_state = new_sync_state
+
+    def sync(self):
+        if self.current_project is not None:
+            previous_state = self.sync_state
+            last_sync_time = self.last_sync_time
+            new_sync_state = self.service.sync(self.current_project, previous_state=previous_state, last_sync_time=last_sync_time)
+            self.sync_state = new_sync_state
+            self.last_sync_time = time.time()
+        else:
+            print(f"No assigned project to sync with.")
 
     def load_project(self, project_name):
         current_project = self.current_project
