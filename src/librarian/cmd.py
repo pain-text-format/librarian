@@ -1,13 +1,17 @@
 import argparse
 import os
+import logging
 
 from librarian.controller import LibrarianController
+
+logger = logging.getLogger(__name__)
 
 def librarian_command_line():
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--library', type=str, help='specify path to library')
     parser.add_argument('--workspace', type=str, help='specify path to workspace')
+    parser.add_argument('--logging', type=str, help='specify logging level', default='warning')
     parser.add_argument('--sync_targets', nargs='+', default=[])
 
     subparsers = parser.add_subparsers(dest="command")
@@ -42,6 +46,19 @@ def librarian_command_line():
     parser.set_defaults()
     args = parser.parse_args()
     command = args.command
+
+    # logging
+    log_levels = {
+        'debug': logging.DEBUG,
+        'info': logging.INFO,
+        'warning': logging.WARNING,
+        'error': logging.ERROR,
+    }
+    log_level = args.logging
+    if isinstance(log_level, str) and log_level.lower() in log_levels:
+        logging.basicConfig(level=log_levels[log_level.lower()])
+    else:
+        logger.warning(f"Invalid logging level selected: {log_level}")
 
     library_path = args.library
     workspace_path = args.workspace

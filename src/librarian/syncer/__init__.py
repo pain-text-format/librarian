@@ -1,6 +1,9 @@
 import os
 from librarian.syncer.data import Bucket
 import shutil
+import logging
+
+logger = logging.getLogger(__name__)
 
 def copy_most_recent(bucket_a:Bucket, bucket_b:Bucket, path:str):
     path_in_a = os.path.join(bucket_a.path, path)
@@ -42,6 +45,8 @@ def sync_buckets(bucket_a:Bucket, bucket_b:Bucket, previous_state:Bucket=None, l
     # demorgans law
     # undeleted (but possibly modified)
     undeleted_paths = paths_a.intersection(paths_b).intersection(paths_0)
+    unmodified = set(filter(lambda path: max(bucket_a.files[path], bucket_b.files[path]) <= last_sync_time, undeleted_paths))
+    undeleted_modified = undeleted_paths.difference(unmodified)
 
     # deleted from exactly one bucket (undeleted one is possibly modified)
     deleted_in_one_bucket = paths_a.intersection(paths_0).difference(paths_b).union(
@@ -55,6 +60,10 @@ def sync_buckets(bucket_a:Bucket, bucket_b:Bucket, previous_state:Bucket=None, l
     )
     # deleted from both buckets (no action needed)
     deleted = paths_0.difference(paths_a).difference(paths_b)
+
+    total_changes = len(undeleted_modified) + len(deleted_in_one_bucket) + len(added_in_one_bucket) + len(added_in_two_buckets)
+    total_num_files = total_changes + len(unmodified)
+    logger.info(f"Found {total_num_files} files and {total_changes} changes.")
 
     # apply updates.
     for path in undeleted_paths:
