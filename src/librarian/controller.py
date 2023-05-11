@@ -1,3 +1,4 @@
+import logging
 import os
 import time
 import yaml
@@ -15,6 +16,8 @@ MODIFY_TIME_KEY = 'modify-time'
 SYNC_TARGET_KEY = 'sync-targets'
 LAST_SYNC_TIME_KEY = 'last-sync-time'
 SYNC_STATE_KEY = 'sync-state'
+
+logger = logging.getLogger(__name__)
 
 def spacing(func):
     def _func(*args, **kwargs):
@@ -247,15 +250,19 @@ class LibrarianController:
             self.current_project = None
             self.load_project(project_name)
 
-    @spacing
     def list_projects(self, pattern):
+        logger.info(f"Listing projects with pattern {pattern}.")
         projects = self.service.list_projects(pattern=pattern)
         projects.sort()
         if not projects:
             print("No projects found in library.")
             return
-        for project in projects:
-            print(f"- {project}")
+        
+        @spacing
+        def display():
+            for project in projects:
+                print(f"- {project}")
+        display()
 
     def delete_projects(self, project_names, pattern, safe=True):
         # prioritize project names, then pattern.

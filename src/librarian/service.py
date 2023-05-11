@@ -122,7 +122,6 @@ class LibraryService:
     # get
     def list_projects(self, pattern=None) -> List[str]:
         # list projects in library (that fit optional pattern argument).
-        logger.info(f"Listing projects with pattern {pattern}.")
         library_path = self.library_path
         projects = list()
         for dirpath, dirnames, filenames in os.walk(library_path):

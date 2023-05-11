@@ -11,7 +11,7 @@ def librarian_command_line():
     parser = argparse.ArgumentParser()
     parser.add_argument('--library', type=str, help='specify path to library')
     parser.add_argument('--workspace', type=str, help='specify path to workspace')
-    parser.add_argument('--logging', type=str, help='specify logging level', default='warning')
+    parser.add_argument('--logging', type=str, help='specify logging level', default='info')
     parser.add_argument('--sync_targets', nargs='+', default=[])
 
     subparsers = parser.add_subparsers(dest="command")
