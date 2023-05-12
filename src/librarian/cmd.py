@@ -11,7 +11,7 @@ def librarian_command_line():
     parser = argparse.ArgumentParser()
     parser.add_argument('--library', type=str, help='specify path to library')
     parser.add_argument('--workspace', type=str, help='specify path to workspace')
-    parser.add_argument('--logging', type=str, help='specify logging level', default='info')
+    parser.add_argument('--log', type=str, help='specify logging level', default='info')
     parser.add_argument('--sync_targets', nargs='+', default=[])
 
     subparsers = parser.add_subparsers(dest="command")
@@ -54,7 +54,7 @@ def librarian_command_line():
         'warning': logging.WARNING,
         'error': logging.ERROR,
     }
-    log_level = args.logging
+    log_level = args.log
     if isinstance(log_level, str) and log_level.lower() in log_levels:
         logging.basicConfig(level=log_levels[log_level.lower()])
     else:
