@@ -162,16 +162,56 @@ class LibraryService:
         for file in self.file_names:
             workspace_file_path = os.path.join(self.workspace_path, file)
             library_file_path = os.path.join(self.library_path, project_name, file)
+
+            workspace_file_exists = os.path.exists(workspace_file_path)
+            library_file_exists = os.path.exists(library_file_path)
             
-            if not (os.path.exists(workspace_file_path) or os.path.exists(library_file_path)):
+            # file doesn't exist.
+            if not (workspace_file_exists or library_file_exists):
                 continue
-            if not os.path.exists(workspace_file_path):
-                ... # TODO do something
-            if not os.path.exists(library_file_path):
-                ... # TODO do something
+
+            # file only exists in one place (copy to other).
+            if not workspace_file_exists or not library_file_exists:
+                if workspace_file_exists:
+                    source_path = workspace_file_path
+                    dest_path = library_file_path
+                else:
+                    source_path = library_file_path
+                    dest_path = workspace_file_path
+
+                mtime = os.path.getmtime(source_path)
+
+                # modification detected after last sync --> copy file instead of delete
+                if mtime > last_sync_time:
+                    dname = os.path.dirname(dest_path)
+                    os.makedirs(dname, exist_ok=True)
+
+                    if os.path.isfile(source_path):
+                        shutil.copy2(source_path, dest_path)
+                    elif os.path.isdir(source_path):
+                        shutil.copytree(source_path, dest_path)
+                
+                # no updates since last sync --> delete both files
+                else:
+                    if os.path.isfile(source_path):
+                        os.remove(source_path)
+                    elif os.path.isdir(source_path):
+                        shutil.rmtree(source_path)
+
             # file exist in both workspace and library.
             if os.path.isfile(workspace_file_path):
-                ... # TODO do something
+                # use most recently updated file.
+                w_time = os.path.getmtime(workspace_file_path)
+                l_time = os.path.getmtime(library_file_path)
+                if max(w_time, l_time) <= last_sync_time:
+                    pass
+                elif w_time > l_time:
+                    shutil.copy2(workspace_file_path, library_file_path)
+                elif l_time > w_time:
+                    shutil.copy2(library_file_path, workspace_file_path)
+                
+                new_state[file] = os.path.getmtime(workspace_file_path)
+
             if os.path.isdir(workspace_file_path):
                 workspace_file_bucket = Bucket(workspace_file_path)
                 library_file_bucket = Bucket(library_file_path)

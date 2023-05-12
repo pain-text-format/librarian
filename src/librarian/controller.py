@@ -225,8 +225,9 @@ class LibrarianController:
             print(f"No assigned project to push to.")
 
     def update_sync_state(self):
-        new_sync_state = self.service.get_sync_state()
-        self.sync_state = new_sync_state
+        # new_sync_state = self.service.get_sync_state()
+        # self.sync_state = new_sync_state
+        pass
 
     def sync(self):
         if self.current_project is not None:
