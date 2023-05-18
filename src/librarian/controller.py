@@ -17,6 +17,7 @@ MODIFY_TIME_KEY = 'modify-time'
 SYNC_TARGET_KEY = 'sync-targets'
 LAST_SYNC_TIME_KEY = 'last-sync-time'
 SYNC_STATE_KEY = 'sync-state'
+TRANSFER_FOLDER_GROUPS = 'transfer-folder-groups'
 
 logger = logging.getLogger(__name__)
 
@@ -66,6 +67,7 @@ class LibrarianController:
                 self.sync_targets = data.get(SYNC_TARGET_KEY)
                 self.last_sync_time = data.get(LAST_SYNC_TIME_KEY)
                 self.sync_state = data.get(SYNC_STATE_KEY)
+                self.transfer_folder_groups = data.get(TRANSFER_FOLDER_GROUPS)
             print("Retrieved Librarian data.")
         else:
             # user inputs here.
@@ -87,6 +89,11 @@ class LibrarianController:
             self.sync_targets = sync_targets
             self.last_sync_time = time.time()
             self.sync_state = None
+            self.transfer_folder_groups = {
+                'cap': ['UserData/cap'],
+                'chara': ['UserData/chara'],
+                'studio': ['UserData/studio'],
+            }
         
         self.service = LibraryService(self.library_path, self.workspace_path, self.sync_targets)
 
@@ -113,6 +120,7 @@ class LibrarianController:
                 SYNC_TARGET_KEY: self.sync_targets,
                 SYNC_STATE_KEY: self.sync_state,
                 LAST_SYNC_TIME_KEY: self.last_sync_time,
+                TRANSFER_FOLDER_GROUPS: self.transfer_folder_groups,
             }, writer)
 
     def _unassign_project(self):
@@ -213,11 +221,14 @@ class LibrarianController:
         self._assign_project(project_name)
         self.pull()
 
-    def transfer(self, source:str, destination:List[str], folders:Set[str]):
+    def transfer(self, source:str, destination:List[str], folder_groups:List[str]):
         # copy folders from source to destination without deleting files in dest.
         # get source project
         if source is None:
             logger.error("Source cannot be empty.")
+            return
+        if not folder_groups:
+            logger.error('Folder groups is empty, nothing to copy.')
             return
         
         source_is_project = self.service.is_project(source)
@@ -236,6 +247,12 @@ class LibrarianController:
                 logger.error(f'Cannot find destionation project \"{dest}\"; skipping.')
             else:
                 destinations.append(corrected_dest)
+
+        folders = set()
+        for group in folder_groups:
+            if not group in self.transfer_folder_groups:
+                continue
+            folders = folders.union(set(self.transfer_folder_groups.get(group)))
 
         print(f"Folders\n\n- " + "\n- ".join(folders) + "\n\nwill be transferred from:\n")
         print(f"- {source}\n\nto\n")
