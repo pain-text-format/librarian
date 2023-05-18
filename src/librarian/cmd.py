@@ -1,6 +1,7 @@
 import argparse
 import os
 import logging
+from typing import List, Set
 
 from librarian.controller import LibrarianController
 
@@ -27,6 +28,14 @@ def librarian_command_line():
     assign_parser = subparsers.add_parser('assign', help='Assign current project to one in library.')
     assign_parser.add_argument('project_name', type=str)
     
+    transfer_parser = subparsers.add_parser('transfer', help='Transfer items from a source project to a destination.')
+    transfer_parser.add_argument('-s', '--source', type=str)
+    transfer_parser.add_argument('-d', '--destination', type=str, nargs='+', default=[])
+    transfer_parser.add_argument('--folders', type=str, nargs="+", default=[])
+    transfer_parser.add_argument('--cap', action='store_true', help='Transfer captures folder.')
+    transfer_parser.add_argument('--chara', action='store_true', help='Transfer characters folder.')
+    transfer_parser.add_argument('--studio', action='store_true', help='Transfer studio folder.')
+
     list_parser = subparsers.add_parser('list', help='List projects in the library.')
     list_parser.add_argument('-p', '--pattern', type=str)
 
@@ -83,6 +92,26 @@ def librarian_command_line():
 
     if command == 'assign':
         controller.assign(args.project_name)
+
+    if command == 'transfer':
+        source:str = args.source
+        destination:List[str] = args.destination
+        folders:Set[str] = set(args.folders)
+
+        is_cap = args.cap
+        is_chara = args.chara
+        is_studio = args.studio
+        if is_cap:
+            folders.add('UserData/cap')
+        if is_chara:
+            folders.add('UserData/chara')
+        if is_studio:
+            folders.add('UserData/studio')
+        if not folders:
+            logger.error('No folders to add.')
+            return
+        
+        controller.transfer(source, destination, folders)
 
     if command == 'pull':
         controller.pull()

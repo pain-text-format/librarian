@@ -1,6 +1,7 @@
 import logging
 import os
 import time
+from typing import List, Set
 import yaml
 from librarian.exceptions import FolderCollisionException, InvalidProjectException
 
@@ -211,6 +212,41 @@ class LibrarianController:
             self.push()
         self._assign_project(project_name)
         self.pull()
+
+    def transfer(self, source:str, destination:List[str], folders:Set[str]):
+        # copy folders from source to destination without deleting files in dest.
+        # get source project
+        if source is None:
+            logger.error("Source cannot be empty.")
+            return
+        
+        source_is_project = self.service.is_project(source)
+        if not source_is_project:
+            source = os.path.join(source, 'default')
+            source_is_project = self.service.is_project(source)
+
+        destinations = list()
+        for dest in destination:
+            corrected_dest = dest
+            dest_is_project = self.service.is_project(corrected_dest)
+            if not dest_is_project:
+                corrected_dest = os.path.join(os.path.split(source)[0], corrected_dest)
+                dest_is_project = self.service.is_project(corrected_dest)
+            if not dest_is_project:
+                logger.error(f'Cannot find destionation project \"{dest}\"; skipping.')
+            else:
+                destinations.append(corrected_dest)
+
+        print(f"Folders\n\n- " + "\n- ".join(folders) + "\n\nwill be transferred from:\n")
+        print(f"- {source}\n\nto\n")
+        for dest in destinations:
+            print(f"- {dest}")
+        confirm = input(f"\nConfirm (y/n): ")
+        if confirm.lower() not in "y":
+            return
+        print('proceeding')
+
+        self.service.transfer(source, destinations, folders)
 
     def pull(self):
         if self.current_project is not None:

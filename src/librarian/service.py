@@ -130,6 +130,23 @@ class LibraryService:
                 if pattern is None or fnmatch.fnmatch(rel_path, pattern):
                     projects.append(os.path.relpath(dirpath, self.library_path))
         return projects
+    
+    def transfer(self, source:str, destinations:List[str], folders:List[str]):
+        source_path = self.to_project_path(source)
+        destination_paths = list(map(self.to_project_path, destinations))
+        for folder in folders:
+            folder_from_source = os.path.join(source_path, folder)
+            if not os.path.exists(folder_from_source):
+                print(1, folder_from_source)
+                continue
+            if not os.path.isdir(folder_from_source):
+                print(2)
+                continue
+            for dest_path in destination_paths:
+                folder_from_dest = os.path.join(dest_path, folder)
+                os.makedirs(folder_from_dest, exist_ok=True)
+                shutil.copytree(folder_from_source, folder_from_dest, dirs_exist_ok=True)
+        return
 
     # update
     def pull_project(self, from_project_name):
