@@ -1,5 +1,5 @@
 import logging
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Set
 import os
 import re
 import shutil
@@ -131,7 +131,7 @@ class LibraryService:
                     projects.append(os.path.relpath(dirpath, self.library_path))
         return projects
     
-    def transfer(self, source:str, destinations:List[str], folders:List[str]):
+    def transfer(self, source:str, destinations:Set[str], folders:Set[str]):
         source_path = self.to_project_path(source)
         destination_paths = list(map(self.to_project_path, destinations))
         for folder in folders:

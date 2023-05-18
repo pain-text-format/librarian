@@ -236,7 +236,7 @@ class LibrarianController:
             source = os.path.join(source, 'default')
             source_is_project = self.service.is_project(source)
 
-        destinations = list()
+        destinations = set()
         for dest in destination:
             corrected_dest = dest
             dest_is_project = self.service.is_project(corrected_dest)
@@ -246,7 +246,7 @@ class LibrarianController:
             if not dest_is_project:
                 logger.error(f'Cannot find destionation project \"{dest}\"; skipping.')
             else:
-                destinations.append(corrected_dest)
+                destinations.add(corrected_dest)
 
         folders = set()
         for group in folder_groups:
