@@ -137,13 +137,16 @@ class LibraryService:
         for folder in folders:
             folder_from_source = os.path.join(source_path, folder)
             if not os.path.exists(folder_from_source):
-                print(1, folder_from_source)
+                logger.info(f"Skipping folder {folder_from_source} which does not exist.")
                 continue
             if not os.path.isdir(folder_from_source):
-                print(2)
+                logger.error(f'target {folder_from_source} is not directory.')
                 continue
             for dest_path in destination_paths:
                 folder_from_dest = os.path.join(dest_path, folder)
+                if os.path.exists(folder_from_dest) and not os.path.isdir(folder_from_dest):
+                    logger.warning(f'Target {folder_from_dest} exists but is not a directory: skipping.')
+                    continue
                 os.makedirs(folder_from_dest, exist_ok=True)
                 shutil.copytree(folder_from_source, folder_from_dest, dirs_exist_ok=True)
         return
