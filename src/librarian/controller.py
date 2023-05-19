@@ -249,10 +249,17 @@ class LibrarianController:
                 destinations.add(corrected_dest)
 
         folders = set()
+
+        is_nonempty = False
         for group in folder_groups:
             if not group in self.transfer_folder_groups:
                 continue
             folders = folders.union(set(self.transfer_folder_groups.get(group)))
+            is_nonempty = True
+        
+        if not is_nonempty:
+            logger.warning("No groups that match folder groups found (exiting).")
+            return
 
         print(f"Folders\n\n- " + "\n- ".join(folders) + "\n\nwill be transferred from:\n")
         print(f"- {source}\n\nto\n")
