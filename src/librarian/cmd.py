@@ -27,6 +27,7 @@ def librarian_command_line():
 
     assign_parser = subparsers.add_parser('assign', help='Assign current project to one in library.')
     assign_parser.add_argument('project_name', type=str)
+    assign_parser.add_argument('--no-save', action='store_true', help='Do not save changes to current project before pulling new project.')
     
     transfer_parser = subparsers.add_parser('transfer', help='Transfer items from a source project to a destination.')
     transfer_parser.add_argument('-s', '--source', type=str)
@@ -88,7 +89,7 @@ def librarian_command_line():
         )
 
     if command == 'assign':
-        controller.assign(args.project_name)
+        controller.assign(args.project_name, save_changes=not args.no_save)
 
     if command == 'transfer':
         source:str = args.source

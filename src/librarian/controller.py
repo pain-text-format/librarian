@@ -215,12 +215,18 @@ class LibrarianController:
             return
         
         # confirm from user to proceed
+        if save_changes:
+            print('Progress will be saved.')
+        else:
+            print('Note: progress will not be saved.')
         confirm = input('Proceed (Y): ')
         if confirm.lower() not in {'y'}:
             return
         
-        print('Saving changes...')
-        self.push()
+        if save_changes:
+            print('Saving changes...')
+            self.push()
+        
         self._assign_project(project_name)
         self.pull()
 
