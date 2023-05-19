@@ -1,5 +1,5 @@
 import logging
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Set
 import os
 import re
 import shutil
@@ -37,7 +37,10 @@ class LibraryService:
 
     def is_project(self, project_name:str) -> bool:
         # check if project name corresponds to a valid project in the library.
-        return project_name is not None and os.path.exists(os.path.join(self.library_path, project_name, STUDIO_PROJECT_FILENAME))
+        return project_name is not None and (
+            os.path.exists(os.path.join(self.library_path, project_name, STUDIO_PROJECT_FILENAME))
+            or project_name == self.workspace_path
+        )
     
     def copy_files(self, source, destination):
         # copy contents from files. (replace destination if exist)
@@ -130,6 +133,26 @@ class LibraryService:
                 if pattern is None or fnmatch.fnmatch(rel_path, pattern):
                     projects.append(os.path.relpath(dirpath, self.library_path))
         return projects
+    
+    def transfer(self, source:str, destinations:Set[str], folders:Set[str]):
+        source_path = self.to_project_path(source)
+        destination_paths = list(map(self.to_project_path, destinations))
+        for folder in folders:
+            folder_from_source = os.path.join(source_path, folder)
+            if not os.path.exists(folder_from_source):
+                logger.info(f"Skipping folder {folder_from_source} which does not exist.")
+                continue
+            if not os.path.isdir(folder_from_source):
+                logger.error(f'target {folder_from_source} is not directory.')
+                continue
+            for dest_path in destination_paths:
+                folder_from_dest = os.path.join(dest_path, folder)
+                if os.path.exists(folder_from_dest) and not os.path.isdir(folder_from_dest):
+                    logger.warning(f'Target {folder_from_dest} exists but is not a directory: skipping.')
+                    continue
+                os.makedirs(folder_from_dest, exist_ok=True)
+                shutil.copytree(folder_from_source, folder_from_dest, dirs_exist_ok=True)
+        return
 
     # update
     def pull_project(self, from_project_name):

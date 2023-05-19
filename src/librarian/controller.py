@@ -1,6 +1,7 @@
 import logging
 import os
 import time
+from typing import List, Set
 import yaml
 from librarian.exceptions import FolderCollisionException, InvalidProjectException
 
@@ -16,6 +17,7 @@ MODIFY_TIME_KEY = 'modify-time'
 SYNC_TARGET_KEY = 'sync-targets'
 LAST_SYNC_TIME_KEY = 'last-sync-time'
 SYNC_STATE_KEY = 'sync-state'
+TRANSFER_FOLDER_GROUPS = 'transfer-folder-groups'
 
 logger = logging.getLogger(__name__)
 
@@ -65,6 +67,7 @@ class LibrarianController:
                 self.sync_targets = data.get(SYNC_TARGET_KEY)
                 self.last_sync_time = data.get(LAST_SYNC_TIME_KEY)
                 self.sync_state = data.get(SYNC_STATE_KEY)
+                self.transfer_folder_groups = data.get(TRANSFER_FOLDER_GROUPS)
             print("Retrieved Librarian data.")
         else:
             # user inputs here.
@@ -86,6 +89,11 @@ class LibrarianController:
             self.sync_targets = sync_targets
             self.last_sync_time = time.time()
             self.sync_state = None
+            self.transfer_folder_groups = {
+                'cap': ['UserData/cap'],
+                'chara': ['UserData/chara'],
+                'studio': ['UserData/studio'],
+            }
         
         self.service = LibraryService(self.library_path, self.workspace_path, self.sync_targets)
 
@@ -112,6 +120,7 @@ class LibrarianController:
                 SYNC_TARGET_KEY: self.sync_targets,
                 SYNC_STATE_KEY: self.sync_state,
                 LAST_SYNC_TIME_KEY: self.last_sync_time,
+                TRANSFER_FOLDER_GROUPS: self.transfer_folder_groups,
             }, writer)
 
     def _unassign_project(self):
@@ -160,7 +169,11 @@ class LibrarianController:
         # get project name from possibly shortened name.
         projects = self.service.list_projects(pattern=project_name)
         if len(projects) == 0:
-            projects = self.service.list_projects(pattern="*"+project_name) # check basename
+            pattern = f"*{project_name}"
+            projects = self.service.list_projects(pattern=pattern) # check basename
+        if len(projects) == 0:
+            pattern = f"*{project_name}/*"
+            projects = self.service.list_projects(pattern=pattern) # expand checks
         if len(projects) == 0:
             print(f"No projects found.")
             return
@@ -200,17 +213,73 @@ class LibrarianController:
         if project_name == self.current_project:
             print("No changes to assignment.")
             return
-        if save_changes is None:
-            print("Save changes before assigning new project?\n")
-            save_changes = input("Select (y/n): ")
-            if save_changes.lower() not in {"y", "n"}:
-                return
-            
-            save_changes = True if save_changes.lower() == "y" else False
+        
+        # confirm from user to proceed
         if save_changes:
+            print('Progress will be saved.')
+        else:
+            print('Note: progress will not be saved.')
+        confirm = input('Proceed (Y): ')
+        if confirm.lower() not in {'y'}:
+            return
+        
+        if save_changes:
+            print('Saving changes...')
             self.push()
+        
         self._assign_project(project_name)
         self.pull()
+
+    def transfer(self, source:str, destination:List[str], folder_groups:List[str]):
+        # copy folders from source to destination without deleting files in dest.
+        # get source project
+        if source is None:
+            logger.error("Source cannot be empty.")
+            return
+        if not folder_groups:
+            logger.error('Folder groups is empty, nothing to copy.')
+            return
+        
+        source_is_project = self.service.is_project(source)
+        if not source_is_project:
+            source = os.path.join(source, 'default')
+            source_is_project = self.service.is_project(source)
+
+        destinations = set()
+        for dest in destination:
+            corrected_dest = dest
+            dest_is_project = self.service.is_project(corrected_dest)
+            if not dest_is_project:
+                corrected_dest = os.path.join(os.path.split(source)[0], corrected_dest)
+                dest_is_project = self.service.is_project(corrected_dest)
+            if not dest_is_project:
+                logger.error(f'Cannot find destionation project \"{dest}\"; skipping.')
+            else:
+                destinations.add(corrected_dest)
+
+        folders = set()
+
+        is_nonempty = False
+        for group in folder_groups:
+            if not group in self.transfer_folder_groups:
+                continue
+            folders = folders.union(set(self.transfer_folder_groups.get(group)))
+            is_nonempty = True
+        
+        if not is_nonempty:
+            logger.warning("No groups that match folder groups found (exiting).")
+            return
+
+        print(f"Folders\n\n- " + "\n- ".join(folders) + "\n\nwill be transferred from:\n")
+        print(f"- {source}\n\nto\n")
+        for dest in destinations:
+            print(f"- {dest}")
+        confirm = input(f"\nConfirm (y/n): ")
+        if confirm.lower() not in "y":
+            return
+
+        self.service.transfer(source, destinations, folders)
+        logger.info('Finished transfer.')
 
     def pull(self):
         if self.current_project is not None:

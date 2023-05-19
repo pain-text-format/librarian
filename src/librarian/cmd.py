@@ -1,6 +1,7 @@
 import argparse
 import os
 import logging
+from typing import List, Set
 
 from librarian.controller import LibrarianController
 
@@ -26,7 +27,17 @@ def librarian_command_line():
 
     assign_parser = subparsers.add_parser('assign', help='Assign current project to one in library.')
     assign_parser.add_argument('project_name', type=str)
+    assign_parser.add_argument('--no-save', action='store_true', help='Do not save changes to current project before pulling new project.')
     
+    transfer_parser = subparsers.add_parser('transfer', help='Transfer items from a source project to a destination.')
+    transfer_parser.add_argument('-s', '--source', type=str)
+    transfer_parser.add_argument('-d', '--destination', type=str, nargs='+', default=[])
+    transfer_parser.add_argument('-g', '--groups', type=str, nargs="+", default=[], help='Folder groups to specify which folders to copy.')
+
+    import_parser = subparsers.add_parser('import', help='Transfer items from a project to destination.')
+    import_parser.add_argument('-s', '--source', type=str)
+    import_parser.add_argument('-g', '--groups', type=str, nargs='+', default=[], help='Folder groups to specify which folders to copy.')
+
     list_parser = subparsers.add_parser('list', help='List projects in the library.')
     list_parser.add_argument('-p', '--pattern', type=str)
 
@@ -82,7 +93,19 @@ def librarian_command_line():
         )
 
     if command == 'assign':
-        controller.assign(args.project_name)
+        controller.assign(args.project_name, save_changes=not args.no_save)
+
+    if command == 'transfer':
+        source:str = args.source
+        destination:List[str] = args.destination
+        groups:Set[str] = args.groups
+        controller.transfer(source, destination, groups)
+
+    if command == 'import':
+        source:str = args.source
+        destination = [controller.workspace_path]
+        groups:Set[str] = args.groups
+        controller.transfer(source, destination, groups)
 
     if command == 'pull':
         controller.pull()
