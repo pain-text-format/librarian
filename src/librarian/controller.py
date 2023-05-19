@@ -268,9 +268,9 @@ class LibrarianController:
         confirm = input(f"\nConfirm (y/n): ")
         if confirm.lower() not in "y":
             return
-        print('proceeding')
 
         self.service.transfer(source, destinations, folders)
+        logger.info('Finished transfer.')
 
     def pull(self):
         if self.current_project is not None:
