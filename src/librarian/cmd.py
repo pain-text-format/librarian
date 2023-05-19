@@ -34,6 +34,10 @@ def librarian_command_line():
     transfer_parser.add_argument('-d', '--destination', type=str, nargs='+', default=[])
     transfer_parser.add_argument('-g', '--groups', type=str, nargs="+", default=[], help='Folder groups to specify which folders to copy.')
 
+    import_parser = subparsers.add_parser('import', help='Transfer items from a project to destination.')
+    import_parser.add_argument('-s', '--source', type=str)
+    import_parser.add_argument('-g', '--groups', type=str, nargs='+', default=[], help='Folder groups to specify which folders to copy.')
+
     list_parser = subparsers.add_parser('list', help='List projects in the library.')
     list_parser.add_argument('-p', '--pattern', type=str)
 
@@ -94,6 +98,12 @@ def librarian_command_line():
     if command == 'transfer':
         source:str = args.source
         destination:List[str] = args.destination
+        groups:Set[str] = args.groups
+        controller.transfer(source, destination, groups)
+
+    if command == 'import':
+        source:str = args.source
+        destination = [controller.workspace_path]
         groups:Set[str] = args.groups
         controller.transfer(source, destination, groups)
 
