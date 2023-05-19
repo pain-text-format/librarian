@@ -169,7 +169,11 @@ class LibrarianController:
         # get project name from possibly shortened name.
         projects = self.service.list_projects(pattern=project_name)
         if len(projects) == 0:
-            projects = self.service.list_projects(pattern="*"+project_name) # check basename
+            pattern = f"*{project_name}"
+            projects = self.service.list_projects(pattern=pattern) # check basename
+        if len(projects) == 0:
+            pattern = f"*{project_name}/*"
+            projects = self.service.list_projects(pattern=pattern) # expand checks
         if len(projects) == 0:
             print(f"No projects found.")
             return
@@ -209,15 +213,14 @@ class LibrarianController:
         if project_name == self.current_project:
             print("No changes to assignment.")
             return
-        if save_changes is None:
-            print("Save changes before assigning new project?\n")
-            save_changes = input("Select (y/n): ")
-            if save_changes.lower() not in {"y", "n"}:
-                return
-            
-            save_changes = True if save_changes.lower() == "y" else False
-        if save_changes:
-            self.push()
+        
+        # confirm from user to proceed
+        confirm = input('Proceed (Y): ')
+        if confirm.lower() not in {'y'}:
+            return
+        
+        print('Saving changes...')
+        self.push()
         self._assign_project(project_name)
         self.pull()
 
