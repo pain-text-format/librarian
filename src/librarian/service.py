@@ -37,7 +37,10 @@ class LibraryService:
 
     def is_project(self, project_name:str) -> bool:
         # check if project name corresponds to a valid project in the library.
-        return project_name is not None and os.path.exists(os.path.join(self.library_path, project_name, STUDIO_PROJECT_FILENAME))
+        return project_name is not None and (
+            os.path.exists(os.path.join(self.library_path, project_name, STUDIO_PROJECT_FILENAME))
+            or project_name == self.workspace_path
+        )
     
     def copy_files(self, source, destination):
         # copy contents from files. (replace destination if exist)
